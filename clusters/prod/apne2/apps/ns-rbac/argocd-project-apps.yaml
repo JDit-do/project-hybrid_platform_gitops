@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  description: Application project
+  sourceRepos:
+    - https://github.com/JDit-do/project-hybrid_frontend_gitops
+    - https://github.com/JDit-do/project-hybrid_env_config_gitops
+  destinations:
+    - namespace: frontend-dev
+      server: https://kubernetes.default.svc
+    - namespace: frontend-prod
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
