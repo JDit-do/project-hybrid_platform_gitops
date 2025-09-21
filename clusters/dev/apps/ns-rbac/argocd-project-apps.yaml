@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: apps
+  namespace: argocd
+spec:
+  description: Dev-only project (on-premise)
+  sourceRepos:
+    - https://github.com/JDit-do/project-hybrid_frontend_gitops
+    - https://github.com/JDit-do/project-hybrid_env_config_gitops
+  destinations:
+    - namespace: frontend-dev
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-dev-secrets
+  namespace: argocd
+spec:
+  project: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend-dev
+  source:
+    repoURL: https://github.com/JDit-do/project-hybrid_env_config_gitops
+    targetRevision: main
+    path: secrets/dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-dev
+  namespace: argocd
+spec:
+  project: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend-dev
+  sources:
+    - repoURL: https://github.com/JDit-do/project-hybrid_env_config_gitops
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/JDit-do/project-hybrid_frontend_gitops
+      targetRevision: main
+      path: frontend/charts/frontend
+      helm:
+        releaseName: frontend-dev
+        valueFiles:
+          - $values/apps/values/values-dev.yaml
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+  revisionHistoryLimit: 10
