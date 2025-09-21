@@ -19,3 +19,95 @@ spec:
   namespaceResourceWhitelist:
     - group: "*"
       kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-dev-secrets
+  namespace: argocd
+spec:
+  project: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend-dev
+  source:
+    repoURL: https://github.com/JDit-do/project-hybrid_env_config_gitops
+    targetRevision: main
+    path: secrets/dev
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-dev
+  namespace: argocd
+spec:
+  project: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend-dev
+  sources:
+    - repoURL: https://github.com/JDit-do/project-hybrid_env_config_gitops
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/JDit-do/project-hybrid_frontend_gitops
+      targetRevision: main
+      path: frontend/charts/frontend
+      helm:
+        releaseName: frontend-dev
+        valueFiles:
+          - $values/apps/values/values-dev.yaml
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-prod-secrets
+  namespace: argocd
+spec:
+  project: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend-prod
+  source:
+    repoURL: https://github.com/JDit-do/project-hybrid_env_config_gitops
+    targetRevision: main
+    path: secrets/prod
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-prod
+  namespace: argocd
+spec:
+  project: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: frontend-prod
+  sources:
+    - repoURL: https://github.com/JDit-do/project-hybrid_env_config_gitops
+      targetRevision: main
+      ref: values
+    - repoURL: https://github.com/JDit-do/project-hybrid_frontend_gitops
+      targetRevision: main
+      path: frontend/charts/frontend
+      helm:
+        releaseName: frontend-prod
+        valueFiles:
+          - $values/apps/values/values-prod.yaml
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
